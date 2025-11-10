@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Inventory Tracker</title>
+<meta name="color-scheme" content="light dark">
+<style>
+  :root{
+    --bg:#f6f7fb; --card:#ffffff; --text:#0f172a; --muted:#475569; --border:#e5e7eb;
+    --primary:#4f46e5; --primary-2:#4338ca; --ok:#059669; --warn:#b45309; --bad:#b91c1c;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0b0b10; --card:#0f0f14; --text:#e5e7eb; --muted:#cbd5e1; --border:#23252c; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(to bottom,var(--bg),#fff0);font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;color:var(--text)}
+  header{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--card) 85%, transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+  .container{max-width:1100px;margin:0 auto;padding:16px}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .btn{padding:8px 14px;border-radius:12px;border:1px solid var(--border);background:#fff0;color:var(--text);cursor:pointer;font-weight:600}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn.primary:hover{background:var(--primary-2)}
+  .btn.ghost:hover{background:color-mix(in srgb,var(--border) 50%, transparent)}
+  .badge{font-size:11px;padding:3px 8px;border-radius:10px;display:inline-block}
+  .b-blue{background:#dbeafe;color:#1e40af}
+  .b-green{background:#dcfce7;color:#065f46}
+  .b-amber{background:#fef3c7;color:#92400e}
+  .b-red{background:#fee2e2;color:#991b1b}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px}
+  h1{font-size:20px;margin:0}
+  h3{margin:0 0 10px 0;font-size:16px}
+  small{color:var(--muted)}
+  .tabs .btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .grid{display:grid;gap:16px}
+  .g-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .g-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  @media(max-width:900px){.g-2,.g-3{grid-template-columns:1fr}}
+  input,select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:transparent;color:var(--text);outline:none}
+  input:focus,select:focus{border-color:var(--primary)}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{padding:10px;border-bottom:1px solid var(--border);text-align:left}
+  tr:hover{background:color-mix(in srgb,var(--border) 35%, transparent)}
+  .bar{height:12px;background:#e5e7eb;border-radius:999px;overflow:hidden}
+  .bar>i{display:block;height:100%;background:var(--primary)}
+  .bar.ok>i{background:var(--ok)} .bar.warn>i{background:var(--warn)} .bar.bad>i{background:var(--bad)}
+  footer{color:var(--muted);font-size:11px}
+  .toast{position:fixed;right:16px;bottom:16px;background:var(--card);border:1px solid var(--border);padding:12px 14px;border-radius:14px;box-shadow:0 10px 30px #0003;display:none}
+  .pill{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;background:var(--primary);color:#fff;font-weight:800}
+  .muted{color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <div class="container row" style="align-items:center">
+    <div class="pill">IT</div>
+    <div style="flex:1">
+      <h1>Inventory Tracker</h1>
+      <small>Data → Forms → Automation</small>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <!-- tabs -->
+  <div class="row tabs" id="tabs">
+    <button class="btn ghost active" data-tab="home">Home</button>
+    <button class="btn ghost" data-tab="items">Items</button>
+    <button class="btn ghost" data-tab="add">Add Item</button>
+    <button class="btn ghost" data-tab="reports">Reports</button>
+    <button class="btn ghost" data-tab="flow">Flow</button>
+  </div>
+
+  <!-- HOME -->
+  <section class="grid g-3" data-pane="home">
+    <div class="card">
+      <h3>Summary</h3>
+      <div class="grid">
+        <div class="row" style="justify-content:space-between"><span>Total items</span><strong id="sumTotal">0</strong></div>
+        <div class="row" style="justify-content:space-between"><span>Office</span><strong id="sumOffice">0</strong></div>
+        <div class="row" style="justify-content:space-between"><span>Warehouse</span><strong id="sumWarehouse">0</strong></div>
+        <div class="row" style="justify-content:space-between"><span>Store</span><strong id="sumStore">0</strong></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Concept</h3>
+      <ul style="margin:0 0 0 18px;padding:0">
+        <li>📋 <b>Data</b>: SharePoint List / Dataverse / Quickbase Tables</li>
+        <li>🧩 <b>App</b>: Power Apps (screens, forms, filters)</li>
+        <li>🔄 <b>Automation</b>: Power Automate (email on create)</li>
+        <li>🔐 <b>Governance</b>: Environments · DLP · Roles/Permissions</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ITEMS -->
+  <section class="grid" data-pane="items" hidden>
+    <div class="card">
+      <h3>Filters</h3>
+      <div class="grid g-3">
+        <input id="q" placeholder="Search product…">
+        <select id="status">
+          <option value="all">All status</option>
+          <option>Available</option>
+          <option>Low Stock</option>
+          <option>Out</option>
+        </select>
+        <div class="row" style="gap:10px">
+          <select id="loc" style="flex:1">
+            <option value="all">All locations</option>
+            <option>Office</option>
+            <option>Warehouse</option>
+            <option>Store</option>
+          </select>
+          <button class="btn ghost" id="reset">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 id="itemsTitle">Items (0)</h3>
+      <div style="overflow:auto">
+        <table id="tbl">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Qty</th>
+              <th>Location</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+        <div id="noData" class="muted" style="padding:20px;text-align:center">No items yet. Use <b>Add Item</b> to create your first entry.</div>
+      </div>
+      <small class="muted">Data source (mock): SharePoint List / Dataverse / Quickbase Table</small>
+    </div>
+  </section>
+
+  <!-- ADD -->
+  <section class="grid g-2" data-pane="add" hidden>
+    <div class="card">
+      <h3>Add New Item</h3>
+      <form id="form" class="grid">
+        <div>
+          <label class="muted" for="fName">Product Name</label>
+          <input id="fName" placeholder="e.g. Barcode Scanner X2">
+        </div>
+        <div class="grid g-2">
+          <div>
+            <label class="muted" for="fQty">Quantity</label>
+            <input id="fQty" type="number" min="0" placeholder="0">
+          </div>
+          <div>
+            <label class="muted" for="fLoc">Location</label>
+            <select id="fLoc">
+              <option>Office</option>
+              <option>Warehouse</option>
+              <option>Store</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="muted" for="fStatus">Status</label>
+          <select id="fStatus">
+            <option>Available</option>
+            <option>Low Stock</option>
+            <option>Out</option>
+          </select>
+        </div>
+        <div class="row">
+          <button class="btn primary" type="submit">Save Item</button>
+          <button class="btn ghost" type="button" id="clear">Clear</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- REPORTS -->
+  <section class="grid g-2" data-pane="reports" hidden>
+    <div class="card">
+      <h3>Items by Location (count)</h3>
+      <div id="byLoc"></div>
+    </div>
+    <div class="card">
+      <h3>Top Quantities (bar)</h3>
+      <div id="topQty"></div>
+    </div>
+    <div class="card">
+      <h3>Insights</h3>
+      <ul style="margin:0 0 0 18px;padding:0">
+        <li>Warehouse trending to <b>Low Stock</b> → reorder suggestion.</li>
+        <li>Zero-qty items surfaced as <b>Out</b> for visibility.</li>
+        <li>These charts could live in <b>Power BI</b> embedded.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- FLOW -->
+  <section class="grid g-2" data-pane="flow" hidden>
+    <div class="card">
+      <h3>Automation Flow</h3>
+      <div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:center">
+        <div class="card" style="border-style:dashed">
+          <small class="muted">Trigger</small>
+          <div><b>New item in SharePoint / Dataverse</b></div>
+        </div>
+        <div style="text-align:center;font-size:20px">➡️</div>
+        <div class="card" style="border-style:dashed">
+          <small class="muted">Action</small>
+          <div><b>Send email to Inventory Owner</b></div>
+        </div>
+        <div style="grid-column:1 / -1;text-align:center">⬇️</div>
+        <div class="card" style="grid-column:1 / -1;border-style:dashed">
+          <small class="muted">Optional</small>
+          <div><b>Create Teams message · Log to Table · Update Status</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Governance Checklist</h3>
+      <ul style="margin:0 0 0 18px;padding:0">
+        <li>Environments: <i>Dev</i>, <i>Test</i>, <i>Prod</i></li>
+        <li>DLP Policies: block risky connectors</li>
+        <li>Role-based access & audit logs</li>
+        <li>Documentation: README + SOPs</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer class="container" style="padding-bottom:40px">
+    <div class="muted">© Inventory Tracker demo UI.</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast"><div><b>Item saved</b><div class="muted">This would also trigger an email</div></div></div>
+
+<script>
+  // ------- Data -------
+  let items = [];
+
+  // ------- Tabs -------
+  const panes = [...document.querySelectorAll("[data-pane]")];
+  document.querySelectorAll("#tabs .btn").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      document.querySelectorAll("#tabs .btn").forEach(b=>b.classList.remove("active"));
+      btn.classList.add("active");
+      const id = btn.getAttribute("data-tab");
+      panes.forEach(p=>p.hidden = p.getAttribute("data-pane")!==id);
+      if(id==="home") updateSummary();
+      if(id==="items") renderTable();
+      if(id==="reports") renderReports();
+    });
+  });
+
+  // ------- Items / Filters -------
+  const elQ = document.getElementById("q");
+  const elStatus = document.getElementById("status");
+  const elLoc = document.getElementById("loc");
+  const elReset = document.getElementById("reset");
+  const tbody = document.getElementById("tbody");
+  const itemsTitle = document.getElementById("itemsTitle");
+  const noData = document.getElementById("noData");
+
+  function filtered(){
+    const q = (elQ.value||"").toLowerCase().trim();
+    const st = elStatus.value;
+    const lo = elLoc.value;
+    return items.filter(it=>{
+      const mQ = !q || it.name.toLowerCase().includes(q);
+      const mS = st==="all" || it.status===st;
+      const mL = lo==="all" || it.location===lo;
+      return mQ && mS && mL;
+    });
+  }
+
+  function statusBadge(s){
+    const cls = s==="Available" ? "b-green" : s==="Low Stock" ? "b-amber" : "b-red";
+    return `<span class="badge ${cls}">${s}</span>`;
+  }
+
+  function renderTable(){
+    const data = filtered();
+    itemsTitle.textContent = `Items (${data.length})`;
+    tbody.innerHTML = data.map(it=>`
+      <tr>
+        <td><b>${it.name}</b></td>
+        <td>${it.qty}</td>
+        <td>${it.location}</td>
+        <td>${statusBadge(it.status)}</td>
+      </tr>
+    `).join("");
+    noData.style.display = data.length ? "none" : "block";
+  }
+
+  elQ.addEventListener("input", renderTable);
+  elStatus.addEventListener("change", renderTable);
+  elLoc.addEventListener("change", renderTable);
+  elReset.addEventListener("click", ()=>{
+    elQ.value=""; elStatus.value="all"; elLoc.value="all"; renderTable();
+  });
+
+  // ------- Add Item -------
+  const f = document.getElementById("form");
+  const fName = document.getElementById("fName");
+  const fQty = document.getElementById("fQty");
+  const fLoc = document.getElementById("fLoc");
+  const fStatus = document.getElementById("fStatus");
+  const btnClear = document.getElementById("clear");
+  const toast = document.getElementById("toast");
+
+  f.addEventListener("submit", e=>{
+    e.preventDefault();
+    const name = (fName.value||"").trim();
+    const qty = Number(fQty.value);
+    if(!name || Number.isNaN(qty)){
+      fName.focus();
+      return;
+    }
+    const item = { id: Date.now(), name, qty, location: fLoc.value, status: fStatus.value };
+    items = [item, ...items];
+    f.reset();
+    fLoc.value = "Office";
+    fStatus.value = "Available";
+    showToast();
+    updateSummary();
+    renderTable();
+    renderReports();
+  });
+
+  btnClear.addEventListener("click", ()=>{
+    f.reset();
+    fLoc.value = "Office";
+    fStatus.value = "Available";
+  });
+
+  function showToast(){
+    toast.style.display = "block";
+    setTimeout(()=> toast.style.display = "none", 2200);
+  }
+
+  // ------- Summary -------
+  const sumTotal = document.getElementById("sumTotal");
+  const sumOffice = document.getElementById("sumOffice");
+  const sumWarehouse = document.getElementById("sumWarehouse");
+  const sumStore = document.getElementById("sumStore");
+
+  function updateSummary(){
+    sumTotal.textContent = items.length;
+    sumOffice.textContent = items.filter(i=>i.location==="Office").length;
+    sumWarehouse.textContent = items.filter(i=>i.location==="Warehouse").length;
+    sumStore.textContent = items.filter(i=>i.location==="Store").length;
+  }
+
+  // ------- Reports -------
+  const byLocBox = document.getElementById("byLoc");
+  const topQtyBox = document.getElementById("topQty");
+
+  function renderBar(label, value, max, tone=""){
+    const w = max ? Math.round((value/max)*100) : 0;
+    return `
+      <div style="margin-bottom:10px">
+        <div class="row" style="justify-content:space-between"><span>${label}</span><span class="muted">${value}</span></div>
+        <div class="bar ${tone}"><i style="width:${w}%"></i></div>
+      </div>
+    `;
+  }
+
+  function renderReports(){
+    // by location
+    const map = {};
+    for(const it of items){ map[it.location] = (map[it.location]||0) + 1; }
+    const locArr = Object.entries(map).map(([location,count])=>({location,count}));
+    const maxLoc = locArr.length ? Math.max(...locArr.map(r=>r.count)) : 0;
+    byLocBox.innerHTML = locArr.length
+      ? locArr.map(r=>renderBar(r.location, r.count, maxLoc, "ok")).join("")
+      : '<div class="muted">No data yet.</div>';
+
+    // top quantities
+    const top = [...items].sort((a,b)=>b.qty-a.qty).slice(0,5);
+    const maxQ = top.length ? Math.max(...top.map(r=>r.qty)) : 0;
+    topQtyBox.innerHTML = top.length
+      ? top.map(r=>renderBar(r.name, r.qty, maxQ, "warn")).join("")
+      : '<div class="muted">No data yet.</div>';
+  }
+
+  // ------- Init -------
+  updateSummary();
+  renderTable();
+</script>
+</body>
+</html>
